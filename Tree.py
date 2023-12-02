@@ -8,7 +8,7 @@ class Node:
     left: Optional['Node']
     right: Optional['Node']
 
-    def is_calculado(self) -> bool:
+    def is_folha(self) -> bool:
         return self.left is None and self.right is None
 
 @dataclass
@@ -35,7 +35,7 @@ class Tree:
             '/': truediv
         }
         node = node or self.root
-        if node.is_calculado():
+        if node.is_folha():
             return float(node.valor)
         else:
             op = OPS[node.valor]
