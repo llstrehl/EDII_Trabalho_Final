@@ -1,153 +1,55 @@
 import re
+from Tree import Tree
 
-class Node:
-    def __init__(self, left_child_index):
-        self.DataValue = ""
-        self.LeftChild = left_child_index
-        self.RightChild = -1
+#Ignorar erro
+regex_expression = "[\/\+\-\*\(\)]|[0-9]{0,15}[.]{0,1}[0-9]{0,4}"
+regex_vari = "[A-Za-z]{1,255}"
+variaveis = {}
 
-class ExpressionTree:
-    def __init__(self):
-        self.Tree = list()
-        for index in range(1, 21):
-            self.Tree.append(Node(index))
-        self.Fringe = list()
-        self.Root = 0
-        self.NextFreeChild = 0
+def calcular(variaveis, string):
+    for vari in variaveis.keys():
+        if(re.search(r'\b' + vari + r'\b', string)):
+            string = re.sub(r'\b' + vari + r'\b', variaveis[vari], string)
 
-    def IsOperator(self, s):
-        if '+' in s:
-            return True
-        if '-' in s:
-            return True
-        if '*' in s:
-            return True
-        if '/' in s:
-            return True
-        return False
+    if(re.search(regex_vari, string)):
+        variErro = re.findall(regex_vari, string)
+        for vari in variErro:
+            raise Exception("Erro: Variável \""+ vari +"\" não inicializada")
 
-    def Insert(self, NewToken):
-        if self.NextFreeChild == -1: # check if tree is full
-            return "Tree is Full" # tree is not full, safe to insert new token
-        if self.NextFreeChild == 0:
-            self.Tree[self.Root].DataValue = NewToken
-            self.NextFreeChild = self.Tree[self.Root].LeftChild
-            self.Tree[self.Root].LeftChild = -1
-        else:
-        # insert into tree with existing nodes
-        # starting with Root
-            Current = 0 # index of the current node
-            Previous = -1 # index of previous node
-            NewNode = self.Tree[self.NextFreeChild] # declare new node
-            NewNode.DataValue = NewToken  # Finding the node at which the NewNode can be inserted
-            while Current != -1:
-                CurrNode = self.Tree[Current]
-                # check if CurrNode contains an operator
-                if self.IsOperator(CurrNode.DataValue):
-                    # if LeftChild is empty, insert here
-                    if CurrNode.LeftChild == -1:
-                        CurrNode.LeftChild = self.NextFreeChild
-                        self.NextFreeChild = NewNode.LeftChild
-                        NewNode.LeftChild = -1
-                        Current = -1
-                    # if RightChild is empty, insert here
-                    elif CurrNode.RightChild == -1:
-                        CurrNode.RightChild = self.NextFreeChild
-                        self.NextFreeChild = NewNode.LeftChild
-                        NewNode.LeftChild = -1
-                        Current = -1
-                    # if LeftChild is an operator
-                    # traverse LeftChild subtree
-                    elif self.IsOperator(self.Tree[CurrNode.LeftChild].DataValue):
-                        Previous = Current
-                        Current = CurrNode.LeftChild
-                        self.Fringe.append(Previous)
-                    # if RightChild is an operator
-                    # traverse RightChild subtree
-                    elif self.IsOperator(self.Tree[CurrNode.RightChild].DataValue):
-                        Previous = Current
-                        Current = CurrNode.RightChild
-                        self.Fringe.append(Previous)
-                    # traverse right subtree
-                    else:
-                        Previous = self.Fringe.pop(-1)
-                        Current = self.Tree[Previous].RightChild
-            # no place to insert
-                else:
-                    return "Cannot be inserted"
-    
-    def Display(self):
-        for index in range(len(self.Tree)):
-            print("Index: ", index, "DataValue: ",self.Tree[index].DataValue)
+    for char in string:
+        if not re.search(regex_expression, char):
+            raise Exception("Erro: caracter \""+ char +"\" inválido")
 
-    def Infix(self, root, arr):
-        if root.DataValue != "":
-            if self.IsOperator(root.DataValue):
-                arr.append('(')  
-            self.Infix(self.Tree[root.LeftChild], arr)
-            arr.append(root.DataValue)
-            self.Infix(self.Tree[root.RightChild], arr)  
-            if self.IsOperator(root.DataValue):
-                arr.append(')')
+    if(string.count("(") != string.count(")")):
+        raise Exception("Erro: parênteses desbalanceados")
+            
+    txt_list = re.findall(regex_expression, string)
+    tree = Tree.build("".join(txt_list))  
+    return tree.evaluate()
 
-    def calculate(self, expression):
-        def processing(left, stack):
-            right = stack.pop() # get right number
-            right = int(right)
-            operator = stack.pop() # get operator
-            left = stack.pop() # get left number
-            left = int(left)  # calculating depending on operator
 
-            if '+' in operator:
-                left += right
-            elif '-' in operator:
-                left -= right
-            elif '*' in operator:
-                left *= right
-            elif '/' in operator:
-                left /= right  
+while(True):
+    expr = input()
+    expr = expr.replace(" ", "")
 
-            return left, stack 
-    
-        stack = []
-        count = 0
-        left = 0 
-        for char in expression:
-            stack.append(char)  
+    if(expr == "exit"):
+        break
 
-            if char == ')':   
-                stack.pop()
-                left, stack = processing(left, stack)
-                stack.pop()
-                stack.append(left)  
+    if('=' in expr):
+        key = expr[:expr.index('=')]
+        value = expr[expr.index('=')+1:]
 
-            if count == len(expression)-1: 
-                left, stack = processing(left, stack)  
-            count += 1 
+        try:
+            variaveis[key] = str(calcular(variaveis,value))
+        except ZeroDivisionError:
+            print("Erro:Divisão por zero")
+        except Exception as err:
+            print(err)
 
-        return left
-
-expressionTree = ExpressionTree()
-expressionTree.Insert('+')
-expressionTree.Insert('*')
-expressionTree.Insert('4')
-expressionTree.Insert('2')
-expressionTree.Insert('/')
-expressionTree.Insert('3')
-expressionTree.Insert('1')
-expressionTree.Display()
-arr = []
-expressionTree.Infix(expressionTree.Tree[0], arr)
-expression_string = ''.join(arr[1:-1])
-print(expression_string)
-regex_expression = "[\/\+\-\*\(\)]|[0-9][0-9][0-9]|[0-9][0-9]|[0-9]"
-txt_list = re.findall(regex_expression, "(2*(3/1))+4")
-print(expressionTree.calculate(txt_list))
-txt_list = re.findall(regex_expression, "2+4")
-print(expressionTree.calculate(txt_list))
-txt_list = re.findall(regex_expression, "(2+4)-1")
-print(expressionTree.calculate(txt_list))
-txt_list = re.findall(regex_expression, "(10-(2+4)")
-print(expressionTree.calculate(txt_list))
-txt_list = re.findall(regex_expression, "2+3*4")
-print(expressionTree.calculate(txt_list))
+    else:
+        try:
+            print(calcular(variaveis, expr))
+        except ZeroDivisionError:
+            print("Erro:Divisão por zero")
+        except Exception as err:
+            print(err)
