@@ -1,6 +1,3 @@
-W.I.P.
-
-
 Este programa é capaz de executar expressões contendo as seguintes operações:
 adição (+), subtração (-), multiplicação (*), divisão (/) 
 E é também capaz de analisar aninhação de parenteses.
